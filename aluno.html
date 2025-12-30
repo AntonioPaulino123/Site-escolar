@@ -1,0 +1,95 @@
+<!-- aluno.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal do Aluno</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Portal do Aluno</h1>
+      <div class="nav">
+        <button class="btn ghost" id="logoutBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2 class="section-title">Boletim</h2>
+        <table class="table" id="boletimTable">
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th>Nota</th>
+              <th>Média</th>
+              <th>Situação</th>
+            </tr>
+          </thead>
+          <tbody id="boletimBody"></tbody>
+        </table>
+        <p id="boletimEmpty" class="empty" style="display:none;">Nenhuma nota lançada.</p>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Materiais</h2>
+        <ul id="materiaisList"></ul>
+        <p id="materiaisEmpty" class="empty" style="display:none;">Nenhum material disponível.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script src="auth.js"></script>
+  <script src="ui.js"></script>
+  <script>
+    // Corrigir caminho caso use local: trocar js.auth.js por js/auth.js
+  </script>
+  <script src="auth.js"></script>
+  <script>
+    window.Auth.require('aluno'); // redireciona se não autenticado
+
+    const aluno = window.Auth.currentUser();
+    const notas = window.Data.getNotasByAluno(aluno.id);
+    const disciplinas = window.Data.getDisciplinas();
+
+    const tbody = document.getElementById('boletimBody');
+    const empty = document.getElementById('boletimEmpty');
+
+    if (!notas.length) {
+      empty.style.display = 'block';
+    } else {
+      notas.forEach(n => {
+        const disc = disciplinas.find(d => d.id === n.disciplinaId);
+        const media = window.Data.calcMedia(aluno.id, n.disciplinaId);
+        const aprovado = media >= 10; // regra simples: média >= 10
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${disc?.nome || '—'}</td>
+          <td>${n.valor.toFixed(1)}</td>
+          <td>${media.toFixed(1)}</td>
+          <td><span class="badge ${aprovado ? 'ok' : 'fail'}">${aprovado ? 'Aprovado' : 'Reprovado'}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Materiais (mock)
+    const materiaisEl = document.getElementById('materiaisList');
+    const mats = window.Data.getMateriaisAluno(aluno.id);
+    if (!mats.length) {
+      document.getElementById('materiaisEmpty').style.display = 'block';
+    } else {
+      mats.forEach(m => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="${m.url}" target="_blank">${m.titulo}</a> — ${m.disciplina}`;
+        materiaisEl.appendChild(li);
+      });
+    }
+
+    document.getElementById('logoutBtn').onclick = () => window.Auth.logout();
+  </script>
+</body>
+</html>

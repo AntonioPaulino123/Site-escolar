@@ -1,0 +1,78 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal Escolar — Login</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card" style="max-width: 480px; margin: 60px auto;">
+      <div class="header">
+        <h1>Portal Escolar</h1>
+        <span class="badge">v1.0</span>
+      </div>
+
+      <div class="input">
+        <label for="role">Perfil</label>
+        <select id="role">
+          <option value="aluno">Aluno</option>
+          <option value="professor">Professor</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+
+      <div class="input">
+        <label for="email">Email ou Matrícula</label>
+        <input id="email" type="text" placeholder="ex: aluno@escola.com ou 2025001" />
+      </div>
+
+      <div class="input">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" placeholder="••••••••" />
+      </div>
+
+      <div class="grid">
+        <button class="btn primary" id="loginBtn">Entrar</button>
+        <button class="btn ghost" id="seedBtn" title="Criar dados de exemplo">Carregar dados de exemplo</button>
+      </div>
+
+      <p id="loginMsg" class="empty" style="margin-top: 10px;"></p>
+
+      <hr />
+      <p class="footer">Sem backend ainda. deois estudo e coloco</p>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    // Login flow
+    document.getElementById('seedBtn').onclick = () => {
+      window.Data.seed();
+      document.getElementById('loginMsg').textContent = 'Dados de exemplo carregados.';
+    };
+
+    document.getElementById('loginBtn').onclick = () => {
+      const role = document.getElementById('role').value;
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+
+      const { ok, user, message } = window.Auth.login(role, email, senha);
+      const msgEl = document.getElementById('loginMsg');
+
+      if (!ok) {
+        msgEl.textContent = message || 'Credenciais inválidas.';
+        return;
+      }
+      msgEl.textContent = 'Login bem-sucedido! Redirecionando...';
+
+      if (user.role === 'aluno') location.href = 'aluno.html';
+      else if (user.role === 'professor') location.href = 'professor.html';
+      else location.href = 'admin.html';
+    };
+  </script>
+</body>
+</html>

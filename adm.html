@@ -1,0 +1,179 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal do Admin</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Administração</h1>
+      <div class="nav">
+        <button class="btn ghost" id="logoutBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2 class="section-title">Alunos</h2>
+        <div class="grid cols-3">
+          <div class="input">
+            <label>Nome</label>
+            <input id="alunoNome" type="text" />
+          </div>
+          <div class="input">
+            <label>Email</label>
+            <input id="alunoEmail" type="email" />
+          </div>
+          <div class="input">
+            <label>Matrícula</label>
+            <input id="alunoMatricula" type="text" />
+          </div>
+        </div>
+        <div class="grid">
+          <button class="btn primary" id="alunoAddBtn">Adicionar/Atualizar</button>
+        </div>
+
+        <table class="table">
+          <thead><tr><th>Nome</th><th>Email</th><th>Matrícula</th><th>Ações</th></tr></thead>
+          <tbody id="alunosBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Disciplinas</h2>
+        <div class="grid cols-2">
+          <div class="input">
+            <label>Nome</label>
+            <input id="discNome" type="text" />
+          </div>
+          <div class="grid">
+            <button class="btn primary" id="discAddBtn">Adicionar/Atualizar</button>
+          </div>
+        </div>
+
+        <table class="table">
+          <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
+          <tbody id="disciplinasBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.Auth.require('admin');
+
+    // Alunos
+    const alunosBody = document.getElementById('alunosBody');
+    const alunoNome = document.getElementById('alunoNome');
+    const alunoEmail = document.getElementById('alunoEmail');
+    const alunoMatricula = document.getElementById('alunoMatricula');
+    let alunoEditId = null;
+
+    function renderAlunos() {
+      const alunos = window.Data.getAlunos();
+      alunosBody.innerHTML = '';
+      alunos.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.nome}</td>
+          <td>${a.email}</td>
+          <td>${a.matricula}</td>
+          <td>
+            <button class="btn ghost" data-id="${a.id}" data-action="edit">Editar</button>
+            <button class="btn danger" data-id="${a.id}" data-action="delete">Excluir</button>
+          </td>
+        `;
+        alunosBody.appendChild(tr);
+      });
+    }
+    renderAlunos();
+
+    document.getElementById('alunoAddBtn').onclick = () => {
+      const nome = alunoNome.value.trim();
+      const email = alunoEmail.value.trim();
+      const matricula = alunoMatricula.value.trim();
+      if (!nome || !email || !matricula) return alert('Preencha todos os campos.');
+
+      window.Data.upsertAluno({ id: alunoEditId, nome, email, matricula });
+      alunoEditId = null;
+      alunoNome.value = alunoEmail.value = alunoMatricula.value = '';
+      renderAlunos();
+    };
+
+    alunosBody.onclick = (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      const a = window.Data.getAlunos().find(x => x.id === id);
+
+      if (action === 'edit') {
+        alunoEditId = id;
+        alunoNome.value = a.nome;
+        alunoEmail.value = a.email;
+        alunoMatricula.value = a.matricula;
+      } else if (action === 'delete') {
+        if (confirm('Excluir aluno?')) {
+          window.Data.deleteAluno(id);
+          renderAlunos();
+        }
+      }
+    };
+
+    // Disciplinas
+    const disciplinasBody = document.getElementById('disciplinasBody');
+    const discNome = document.getElementById('discNome');
+    let discEditId = null;
+
+    function renderDisciplinas() {
+      const ds = window.Data.getDisciplinas();
+      disciplinasBody.innerHTML = '';
+      ds.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${d.nome}</td>
+          <td>
+            <button class="btn ghost" data-id="${d.id}" data-action="edit">Editar</button>
+            <button class="btn danger" data-id="${d.id}" data-action="delete">Excluir</button>
+          </td>
+        `;
+        disciplinasBody.appendChild(tr);
+      });
+    }
+    renderDisciplinas();
+
+    document.getElementById('discAddBtn').onclick = () => {
+      const nome = discNome.value.trim();
+      if (!nome) return alert('Informe o nome da disciplina.');
+      window.Data.upsertDisciplina({ id: discEditId, nome });
+      discEditId = null;
+      discNome.value = '';
+      renderDisciplinas();
+    };
+
+    disciplinasBody.onclick = (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      const d = window.Data.getDisciplinas().find(x => x.id === id);
+
+      if (action === 'edit') {
+        discEditId = id;
+        discNome.value = d.nome;
+      } else if (action === 'delete') {
+        if (confirm('Excluir disciplina?')) {
+          window.Data.deleteDisciplina(id);
+          renderDisciplinas();
+        }
+      }
+    };
+
+    document.getElementById('logoutBtn').onclick = () => window.Auth.logout();
+  </script>
+</body>
+</html>

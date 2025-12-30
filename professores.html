@@ -1,0 +1,159 @@
+<!-- professor.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portal do Professor</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Portal do Professor</h1>
+      <div class="nav">
+        <button class="btn ghost" id="logoutBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Lançamento de notas</h2>
+      <div class="grid cols-3">
+        <div class="input">
+          <label>Aluno</label>
+          <select id="alunoSelect">
+             <option value="Antonio">António Lando Paulino</option>
+              <option value="Benjamim">Benjamim Ngombo</option>
+               <option value="Carlota">Carlota Pedro</option>
+                <option value="Delcio">Délcio Matondo</option>
+          </select>
+        </div>
+        <div class="input">
+          <label>Disciplina</label>
+          <select id="discSelect">
+            <option value="PT">PT</option>
+            <option value="Matematia">Matemática</option>
+            <option value="Fisica">Física</option>
+            <option value="TT">TT</option>
+          </select>
+        </div>
+        <div class="input">
+          <label>Nota (0–20)</label>
+          <input id="notaInput" type="number" min="0" max="20" step="0.1" />
+        </div>
+      </div>
+      <div class="grid">
+        <button class="btn primary" id="lançarBtn">Lançar/Atualizar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Notas lançadas</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Disciplina</th>
+            <th>Nota</th>
+            <th>Média</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="notasBody"></tbody>
+      </table>
+      <p id="notasEmpty" class="empty" style="display:none;">Sem notas ainda.</p>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.Auth.require('professor');
+
+    const alunos = window.Data.getAlunos();
+    const disciplinas = window.Data.getDisciplinas();
+
+    const alunoSel = document.getElementById('alunoSelect');
+    const discSel = document.getElementById('discSelect');
+    const notaInput = document.getElementById('notaInput');
+    const notasBody = document.getElementById('notasBody');
+    const notasEmpty = document.getElementById('notasEmpty');
+
+    alunos.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id; opt.textContent = `${a.nome} (${a.matricula})`;
+      alunoSel.appendChild(opt);
+    });
+
+    disciplinas.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id; opt.textContent = d.nome;
+      discSel.appendChild(opt);
+    });
+
+    function renderNotas() {
+      const notas = window.Data.getNotas();
+      notasBody.innerHTML = '';
+      if (!notas.length) {
+        notasEmpty.style.display = 'block';
+        return;
+      }
+      notasEmpty.style.display = 'none';
+      notas.forEach(n => {
+        const aluno = alunos.find(a => a.id === n.alunoId);
+        const disc = disciplinas.find(d => d.id === n.disciplinaId);
+        const media = window.Data.calcMedia(n.alunoId, n.disciplinaId);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${aluno?.nome || '—'}</td>
+          <td>${disc?.nome || '—'}</td>
+          <td>${n.valor.toFixed(1)}</td>
+          <td>${media.toFixed(1)}</td>
+          <td>
+            <button class="btn ghost" data-id="${n.id}" data-action="edit">Editar</button>
+            <button class="btn danger" data-id="${n.id}" data-action="delete">Excluir</button>
+          </td>
+        `;
+        notasBody.appendChild(tr);
+      });
+    }
+
+    renderNotas();
+
+    document.getElementById('lançarBtn').onclick = () => {
+      const alunoId = alunoSel.value;
+      const disciplinaId = discSel.value;
+      const valor = parseFloat(notaInput.value);
+      if (Number.isNaN(valor) || valor < 0 || valor > 20) {
+        alert('Informe uma nota válida (0–20).');
+        return;
+      }
+      window.Data.upsertNota({ alunoId, disciplinaId, valor });
+      notaInput.value = '';
+      renderNotas();
+    };
+
+    notasBody.onclick = (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      const nota = window.Data.getNotaById(id);
+
+      if (action === 'edit') {
+        alunoSel.value = nota.alunoId;
+        discSel.value = nota.disciplinaId;
+        notaInput.value = nota.valor;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (action === 'delete') {
+        if (confirm('Excluir esta nota?')) {
+          window.Data.deleteNota(id);
+          renderNotas();
+        }
+      }
+    };
+
+    document.getElementById('logoutBtn').onclick = () => window.Auth.logout();
+  </script>
+</body>
+</html>
